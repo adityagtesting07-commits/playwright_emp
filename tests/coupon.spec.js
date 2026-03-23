@@ -35,39 +35,45 @@ async function openNewcouponPage(page){
 async function fillNewCoupon(page , overrides={}){
   const data={...coupData , ...overrides};
   if(data.couponCode!==undefined){
-    page.getByRole('textbox',{name:'SUMMER20'}).fill(data.couponCode);
+    await page.getByRole('textbox',{name:'SUMMER20'}).fill(data.couponCode);
   }
   if(data.couponName!==undefined){
-    page.getByRole('textbox',{ name: 'Name*' }).fill(data.couponName);
+    await page.getByRole('textbox',{ name: 'Name*' }).fill(data.couponName);
   }
   if(data.type!==undefined){
-    page.getByLabel('Type*').selectOption(data.type);
+    await page.getByLabel('Type*').selectOption(data.type);
   }
   if(data.percent!==undefined){
-    page.getByRole('spinbutton', { name: 'Percentage (%)*' }).fill(data.percent);
+    await page.getByRole('spinbutton', { name: 'Percentage (%)*' }).fill(data.percent);
   }
   if(data.Scope!==undefined){
-    page.getByLabel('Applies To').selectOption(data.Scope);
+    await page.getByLabel('Applies To').selectOption(data.Scope);
   }
   if(data.maxRedem!==undefined){
-    page.getByRole('spinbutton', { name: 'Max Redemptions' }).fill(data.maxRedem);
+    await page.getByRole('spinbutton', { name: 'Max Redemptions' }).fill(data.maxRedem);
   }
   if(data.maxRPerCleint!==undefined){
-    page.locator('input[name="maxRedemptionsPerClient"]').fill(data.maxRPerCleint);
+    await page.locator('input[name="maxRedemptionsPerClient"]').fill(data.maxRPerCleint);
   }
   if(data.minAmnt!==undefined){
-    page.getByRole('spinbutton', { name: 'Minimum Amount' }).fill(data.minAmnt);
+    await page.getByRole('spinbutton', { name: 'Minimum Amount' }).fill(data.minAmnt);
   }
   if(data.validfrom!==undefined){
-    page.getByRole('textbox', { name: 'Valid From' }).fill(data.validfrom);
+    await page.getByRole('textbox', { name: 'Valid From' }).fill(data.validfrom);
   }
   if(data.validTo!==undefined){
-    page.getByRole('textbox', { name: 'Valid Until' }).fill(data.validTo);
+    await page.getByRole('textbox', { name: 'Valid Until' }).fill(data.validTo);
   }
 }
 
 async function submitCouponForm(page){
   await page.getByRole('button', { name: 'Create Coupon' }).click();
+}
+
+async function getFirstCouponActionButtons(page) {
+  const firstDataRow = page.locator('table tbody tr').first();
+  await expect(firstDataRow).toBeVisible();
+  return firstDataRow.getByRole('button');
 }
 
 
@@ -87,9 +93,48 @@ test('adding new coupon data',async({page})=>{
   await submitCouponForm(page);
 });
 
+test('edit coupon button opens edit page', async ({ page }) => {
+  await loginAndOpenCoupons(page);
+
+  const actionButtons = await getFirstCouponActionButtons(page);
+  await actionButtons.nth(1).click();
+
+  await expect(page).toHaveURL(/coupons/i);
+  await expect(page.getByRole('heading', { name: /coupon/i })).toBeVisible();
+});
+
+test('deactivate coupon button deactivates coupon', async ({ page }) => {
+  await loginAndOpenCoupons(page);
+
+  const actionButtons = await getFirstCouponActionButtons(page);
+
+  page.once('dialog', async (dialog) => {
+    await dialog.accept();
+  });
+
+  await actionButtons.nth(2).click();
+  await expect(page.getByText(/coupon deactivated/i)).toBeVisible();
+});
 
 
 
+
+
+// import { test, expect } from '@playwright/test';
+
+// test('test', async ({ page }) => {
+//   await page.goto('https://test-billing.empcloud.com/login');
+//   await page.getByRole('button').nth(4).click();
+//   await page.goto('https://test-billing.empcloud.com/coupons');
+//   await page.getByRole('button').nth(5).click();
+//   await page.goto('https://test-billing.empcloud.com/coupons');
+//   page.once('dialog', dialog => {
+//     console.log(`Dialog message: ${dialog.message()}`);
+//     dialog.dismiss().catch(() => {});
+//   });
+//   await page.locator('tr:nth-child(2) > .px-6.py-3.text-right > .flex > .p-1\\.5.text-gray-400.hover\\:text-red-500').click();
+//   await page.locator('div').filter({ hasText: 'Coupon deactivated' }).nth(3).click();
+// });
 
 
 
